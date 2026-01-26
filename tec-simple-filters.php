@@ -34,8 +34,37 @@ function tec_simple_filters_setup() {
     }
 
     add_action( 'wp_enqueue_scripts', 'tec_simple_filters_enqueue_assets' );
-    add_filter( 'tribe_events_views_v2_view_repository_args', 'tec_simple_filters_apply_filters', 10, 2 );
+    add_filter( 'tribe_events_views_v2_view_repository_args', 'tec_simple_filters_apply_filters', 10, 3 );
     add_filter( 'tribe_events_views_v2_view_url', 'tec_simple_filters_preserve_query_args_in_view_urls', 10, 3 );
+}
+
+/**
+ * Helper to get query value from context or global state.
+ */
+function tec_simple_filters_get_val( $key, $context = null ) {
+    // 1. Try passed context (e.g. from a filter)
+    if ( $context && method_exists( $context, 'get' ) ) {
+        $val = $context->get( $key );
+        if ( $val !== null ) return $val;
+    }
+    
+    // 2. Try View object context
+    if ( is_object( $context ) && method_exists( $context, 'get_context' ) ) {
+        $view_context = $context->get_context();
+        if ( $view_context && method_exists( $view_context, 'get' ) ) {
+            $val = $view_context->get( $key );
+            if ( $val !== null ) return $val;
+        }
+    }
+
+    // 3. Fallback to global tribe_context
+    if ( function_exists( 'tribe_context' ) ) {
+        $val = tribe_context()->get( $key );
+        if ( $val !== null ) return $val;
+    }
+
+    // 4. Final fallback to $_GET
+    return isset( $_GET[ $key ] ) ? $_GET[ $key ] : '';
 }
 
 function tec_simple_filters_enqueue_assets() {
@@ -118,7 +147,7 @@ function tec_simple_filters_enqueue_assets() {
     ] );
 }
 
-function tec_simple_filters_apply_filters( $args, $view ) {
+function tec_simple_filters_apply_filters( $args, $context, $view ) {
     if ( empty( $args['meta_query'] ) || ! is_array( $args['meta_query'] ) ) {
         $args['meta_query'] = [ 'relation' => 'AND' ];
     } elseif ( ! isset( $args['meta_query']['relation'] ) ) {
@@ -131,8 +160,8 @@ function tec_simple_filters_apply_filters( $args, $view ) {
         $args['tax_query']['relation'] = 'AND';
     }
 
-    if ( isset( $_GET['tec_venue'] ) && intval( $_GET['tec_venue'] ) ) {
-        $venue_id = intval( $_GET['tec_venue'] );
+    $venue_id = intval( tec_simple_filters_get_val( 'tec_venue', $context ) );
+    if ( $venue_id ) {
         $args['meta_query'][] = [
             'key'     => '_EventVenueID',
             'value'   => $venue_id,
@@ -140,8 +169,8 @@ function tec_simple_filters_apply_filters( $args, $view ) {
         ];
     }
 
-    if ( isset( $_GET['tec_organizer'] ) && intval( $_GET['tec_organizer'] ) ) {
-        $organizer_id = intval( $_GET['tec_organizer'] );
+    $organizer_id = intval( tec_simple_filters_get_val( 'tec_organizer', $context ) );
+    if ( $organizer_id ) {
         $args['meta_query'][] = [
             'key'     => '_EventOrganizerID',
             'value'   => $organizer_id,
@@ -150,8 +179,8 @@ function tec_simple_filters_apply_filters( $args, $view ) {
     }
 
     // Category (tribe_events_cat) filter - taxonomy by slug
-    if ( isset( $_GET['tribe_events_cat'] ) && strlen( trim( $_GET['tribe_events_cat'] ) ) ) {
-        $cat = sanitize_text_field( wp_unslash( $_GET['tribe_events_cat'] ) );
+    $cat = sanitize_text_field( tec_simple_filters_get_val( 'tribe_events_cat', $context ) );
+    if ( $cat ) {
         $args['tax_query'][] = [
             'taxonomy' => 'tribe_events_cat',
             'field'    => 'slug',
@@ -160,14 +189,13 @@ function tec_simple_filters_apply_filters( $args, $view ) {
     }
 
     // Tag filter (post_tag) - use query var
-    if ( isset( $_GET['tag'] ) && strlen( trim( $_GET['tag'] ) ) ) {
-        $tag = sanitize_text_field( wp_unslash( $_GET['tag'] ) );
-        // 'tag' is a recognized WP query var
+    $tag = sanitize_text_field( tec_simple_filters_get_val( 'tag', $context ) );
+    if ( $tag ) {
         $args['tag'] = $tag;
     }
 
-    if ( isset( $_GET['tec_venue_city'] ) && strlen( trim( $_GET['tec_venue_city'] ) ) ) {
-        $city = sanitize_text_field( wp_unslash( $_GET['tec_venue_city'] ) );
+    $city = sanitize_text_field( tec_simple_filters_get_val( 'tec_venue_city', $context ) );
+    if ( $city ) {
         $city_group = [ 'relation' => 'OR' ];
 
         // 1) Check event meta directly (fallback)
@@ -194,9 +222,8 @@ function tec_simple_filters_apply_filters( $args, $view ) {
         $args['meta_query'][] = $city_group;
     }
 
-    // State/province filter: look up venues where state/province meta matches
-    if ( isset( $_GET['tec_venue_state'] ) && strlen( trim( $_GET['tec_venue_state'] ) ) ) {
-        $state = sanitize_text_field( wp_unslash( $_GET['tec_venue_state'] ) );
+    $state = sanitize_text_field( tec_simple_filters_get_val( 'tec_venue_state', $context ) );
+    if ( $state ) {
         $state_group = [ 'relation' => 'OR' ];
 
         // Direct event meta checks (fallback)
@@ -232,27 +259,18 @@ function tec_simple_filters_apply_filters( $args, $view ) {
 
 function tec_simple_filters_preserve_query_args_in_view_urls( $url, $canonical, $view ) {
     $params = [];
-    if ( isset( $_GET['tec_venue'] ) ) {
-        $params['tec_venue'] = intval( $_GET['tec_venue'] );
-    }
-    if ( isset( $_GET['tec_organizer'] ) ) {
-        $params['tec_organizer'] = intval( $_GET['tec_organizer'] );
-    }
-    if ( isset( $_GET['tec_venue_city'] ) ) {
-        $params['tec_venue_city'] = sanitize_text_field( wp_unslash( $_GET['tec_venue_city'] ) );
-    }
-    if ( isset( $_GET['tec_venue_state'] ) ) {
-        $params['tec_venue_state'] = sanitize_text_field( wp_unslash( $_GET['tec_venue_state'] ) );
-    }
-    if ( isset( $_GET['tribe_events_cat'] ) ) {
-        $params['tribe_events_cat'] = sanitize_text_field( wp_unslash( $_GET['tribe_events_cat'] ) );
-    }
-    if ( isset( $_GET['tag'] ) ) {
-        $params['tag'] = sanitize_text_field( wp_unslash( $_GET['tag'] ) );
+    $keys = [ 'tec_venue', 'tec_organizer', 'tec_venue_city', 'tec_venue_state', 'tribe_events_cat', 'tag' ];
+    
+    foreach ( $keys as $key ) {
+        // Pass the view object itself to the helper so it can extract the view's specific context
+        $val = tec_simple_filters_get_val( $key, $view );
+        if ( $val ) {
+            $params[ $key ] = $val;
+        }
     }
 
     if ( $params ) {
-        $url .= ( strpos( $url, '?' ) === false ? '?' : '&' ) . http_build_query( $params );
+        $url = add_query_arg( $params, $url );
     }
 
     return $url;
