@@ -136,14 +136,6 @@ function tec_simple_filters_enqueue_assets() {
         'states'     => $states,
         'categories' => $categories,
         'tags'       => $tags,
-        'query'      => [
-            'venue'     => isset( $_GET['tec_venue'] ) ? intval( $_GET['tec_venue'] ) : '',
-            'organizer' => isset( $_GET['tec_organizer'] ) ? intval( $_GET['tec_organizer'] ) : '',
-            'venue_city'=> isset( $_GET['tec_venue_city'] ) ? sanitize_text_field( wp_unslash( $_GET['tec_venue_city'] ) ) : '',
-            'venue_state'=> isset( $_GET['tec_venue_state'] ) ? sanitize_text_field( wp_unslash( $_GET['tec_venue_state'] ) ) : '',
-            'tribe_events_cat' => isset( $_GET['tribe_events_cat'] ) ? sanitize_text_field( wp_unslash( $_GET['tribe_events_cat'] ) ) : '',
-            'tag'       => isset( $_GET['tag'] ) ? sanitize_text_field( wp_unslash( $_GET['tag'] ) ) : '',
-        ],
     ] );
 }
 
