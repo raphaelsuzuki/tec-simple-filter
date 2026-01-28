@@ -4,6 +4,8 @@
  * Description: Adds simple filters (venue, venue city, organizer, category, tag) to The Events Calendar events bar.
  * Version: 0.1.0
  * Author: Raphael Suzuki
+ * GitHub Plugin URI: https://github.com/raphaelsuzuki/tec-simple-filter
+ * Primary Branch: master
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
