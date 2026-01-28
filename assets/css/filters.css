@@ -1,122 +1,122 @@
 /* Allow the events bar to wrap so the filters row can sit below the search bar */
 .tribe-events-c-events-bar {
-    flex-wrap: wrap !important;
+	flex-wrap: wrap !important;
 }
 
 .tec-simple-filters-row {
-    flex: 0 0 100%;
-    width: 100%;
-    border-top: 1px solid var(--tec-color-border-events-bar, #d1d1d1);
-    padding: var(--tec-spacer-4, 1rem) var(--tec-spacer-5, 1.25rem);
-    /* Proportional padding */
-    box-sizing: border-box;
-    background-color: var(--tec-color-background-events-bar, #fff);
+	flex: 0 0 100%;
+	width: 100%;
+	border-top: 1px solid var(--tec-color-border-events-bar, #d1d1d1);
+	padding: var(--tec-spacer-4, 1rem) var(--tec-spacer-5, 1.25rem);
+	/* Proportional padding */
+	box-sizing: border-box;
+	background-color: var(--tec-color-background-events-bar, #fff);
 }
 
 .tribe-common .tec-simple-filters-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--tec-spacer-3, 0.75rem);
-    /* Tighter gap to squeeze elements */
-    align-items: flex-end;
-    padding: 15px 11px 9px !important;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--tec-spacer-3, 0.75rem);
+	/* Tighter gap to squeeze elements */
+	align-items: flex-end;
+	padding: 15px 11px 9px !important;
 }
 
 .tec-simple-filter-control {
-    display: flex;
-    flex-direction: column;
-    gap: var(--tec-spacer-1, 0.25rem);
-    flex: 1 1 140px;
-    /* Allow items to shrink more */
-    max-width: 220px;
+	display: flex;
+	flex-direction: column;
+	gap: var(--tec-spacer-1, 0.25rem);
+	flex: 1 1 140px;
+	/* Allow items to shrink more */
+	max-width: 220px;
 }
 
 .tribe-common-form-control-select__label {
-    font-size: 0.625rem;
-    /* Slightly smaller to save space */
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--tec-color-text-events-bar-input-placeholder, #666);
-    letter-spacing: 0.05em;
-    margin-bottom: 0.125rem;
-    display: block;
+	font-size: 0.625rem;
+	/* Slightly smaller to save space */
+	font-weight: 700;
+	text-transform: uppercase;
+	color: var(--tec-color-text-events-bar-input-placeholder, #666);
+	letter-spacing: 0.05em;
+	margin-bottom: 0.125rem;
+	display: block;
 }
 
 .tribe-common-form-control-select__input {
-    appearance: none;
-    background-color: transparent;
-    border: 1px solid var(--tec-color-border-events-bar, #d1d1d1);
-    border-radius: var(--tec-border-radius-default, 4px);
-    padding: 0.5rem 1.75rem 0.5rem 0.5rem;
-    /* Tighter padding */
-    font-size: 0.75rem;
-    /* Compact font */
-    line-height: 1.2;
-    width: 100%;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23666' d='M0 0l5 5 5-5z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.5rem center;
-    cursor: pointer;
-    color: var(--tec-color-text-events-bar-input, #333);
-    transition: all 0.2s ease;
+	appearance: none;
+	background-color: transparent;
+	border: 1px solid var(--tec-color-border-events-bar, #d1d1d1);
+	border-radius: var(--tec-border-radius-default, 4px);
+	padding: 0.5rem 1.75rem 0.5rem 0.5rem;
+	/* Tighter padding */
+	font-size: 0.75rem;
+	/* Compact font */
+	line-height: 1.2;
+	width: 100%;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23666' d='M0 0l5 5 5-5z'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 0.5rem center;
+	cursor: pointer;
+	color: var(--tec-color-text-events-bar-input, #333);
+	transition: all 0.2s ease;
 }
 
 .tribe-common-form-control-select__input:hover {
-    border-color: var(--tec-color-icon-events-bar-hover, #999);
+	border-color: var(--tec-color-icon-events-bar-hover, #999);
 }
 
 .tribe-common-form-control-select__input:focus {
-    outline: 2px solid var(--tec-color-accent-secondary, #334aff);
-    outline-offset: -1px;
-    background-color: #fff;
+	outline: 2px solid var(--tec-color-accent-secondary, #334aff);
+	outline-offset: -1px;
+	background-color: #fff;
 }
 
 .tec-simple-filters-clear-btn {
-    /* No margin-left: auto here to keep it in line */
-    height: 32px;
-    padding: 0 0.75rem;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    align-self: flex-end;
-    border-radius: var(--tec-border-radius-default, 4px);
-    border: 1px solid var(--tec-color-border-events-bar, #d1d1d1);
-    background: transparent;
-    color: var(--tec-color-text-events-bar-input, #666);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    flex: 0 0 auto;
-    margin-bottom: 2px;
-    /* Small adjustment for baseline alignment */
+	/* No margin-left: auto here to keep it in line */
+	height: 32px;
+	padding: 0 0.75rem;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	align-self: flex-end;
+	border-radius: var(--tec-border-radius-default, 4px);
+	border: 1px solid var(--tec-color-border-events-bar, #d1d1d1);
+	background: transparent;
+	color: var(--tec-color-text-events-bar-input, #666);
+	cursor: pointer;
+	transition: all 0.2s ease;
+	flex: 0 0 auto;
+	margin-bottom: 2px;
+	/* Small adjustment for baseline alignment */
 }
 
 .tec-simple-filters-clear-btn:hover {
-    background-color: var(--tec-color-background-events-bar, #f9f9f9);
-    border-color: var(--tec-color-icon-events-bar-hover, #999);
-    color: var(--tec-color-text-primary, #333);
+	background-color: var(--tec-color-background-events-bar, #f9f9f9);
+	border-color: var(--tec-color-icon-events-bar-hover, #999);
+	color: var(--tec-color-text-primary, #333);
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .tec-simple-filters-container {
-        gap: var(--tec-spacer-2, 0.5rem);
-    }
+	.tec-simple-filters-container {
+		gap: var(--tec-spacer-2, 0.5rem);
+	}
 
-    .tec-simple-filter-control {
-        flex: 1 1 calc(50% - 0.25rem);
-        max-width: none;
-    }
+	.tec-simple-filter-control {
+		flex: 1 1 calc(50% - 0.25rem);
+		max-width: none;
+	}
 
-    .tec-simple-filters-clear-btn {
-        width: 100%;
-        margin-left: 0;
-        margin-top: 0.5rem;
-        order: 10;
-    }
+	.tec-simple-filters-clear-btn {
+		width: 100%;
+		margin-left: 0;
+		margin-top: 0.5rem;
+		order: 10;
+	}
 }
 
 /* Specific view adjustments if necessary */
 .tribe-events-header--has-event-search .tec-simple-filters-row {
-    background-color: var(--tec-color-background-events-bar, #fff);
+	background-color: var(--tec-color-background-events-bar, #fff);
 }
