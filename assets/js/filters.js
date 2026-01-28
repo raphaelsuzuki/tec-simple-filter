@@ -4,14 +4,14 @@
     /**
      * Build select element with options.
      */
-    function buildSelect(items, name, selected) {
+    function buildSelect(items, name, selected, placeholder) {
         var $sel = $('<select>').addClass('tec-simple-filters-select').attr('data-name', name);
-        $sel.append($('<option>').attr('value', '').text(name.replace(/tec_/g, '').replace(/_/g, ' ').toUpperCase()));
+        $sel.append($('<option>').attr('value', '').text(placeholder));
 
         items.forEach(function (it) {
             var val = it.id || it;
-            var label = it.name || it;
-            var $o = $('<option>').attr('value', val).text(label);
+            var labelItem = it.name || it;
+            var $o = $('<option>').attr('value', val).text(labelItem);
             // Loose comparison to handle numeric strings vs numbers
             if (val && selected && String(val) === String(selected)) {
                 $o.prop('selected', true);
@@ -92,34 +92,38 @@
          * Build the filter UI.
          */
         function renderFilters() {
-            var $topBar = $('.tribe-events-c-top-bar.tribe-events-header__top-bar');
-            if (!$topBar.length) {
-                $topBar = $('[data-js="tribe-events-view-selector"]').closest('.tribe-events-c-view-selector');
-            }
-            if (!$topBar.length) {
+            var $eventsBar = $('.tribe-events-c-events-bar');
+            if (!$eventsBar.length) {
                 return;
             }
 
             // Cleanup
-            $topBar.find('.tribe-events-c-view-selector__filters').remove();
+            $('.tec-simple-filters-row').remove();
 
-            var $container = $('<div>').addClass('tribe-events-c-view-selector__filters');
+            var $container = $('<div>').addClass('tec-simple-filters-row');
+            var $inner = $('<div>').addClass('tec-simple-filters-container');
             var q = getQueryVal;
 
             [
-                { list: 'categories', key: 'tribe_events_cat', label: 'Category' },
-                { list: 'tags', key: 'tag', label: 'Tag' },
-                { list: 'venues', key: 'tec_venue', label: 'Venue' },
-                { list: 'organizers', key: 'tec_organizer', label: 'Organizer' },
-                { list: 'cities', key: 'tec_venue_city', label: 'City' },
-                { list: 'states', key: 'tec_venue_state', label: 'State / Province' }
+                { list: 'categories', key: 'tribe_events_cat', label: 'Category', placeholder: 'All Categories' },
+                { list: 'tags', key: 'tag', label: 'Tag', placeholder: 'All Tags' },
+                { list: 'venues', key: 'tec_venue', label: 'Venue', placeholder: 'All Venues' },
+                { list: 'organizers', key: 'tec_organizer', label: 'Organizer', placeholder: 'All Organizers' },
+                { list: 'cities', key: 'tec_venue_city', label: 'City', placeholder: 'All Cities' },
+                { list: 'states', key: 'tec_venue_state', label: 'State / Province', placeholder: 'All States' }
             ].forEach(function (cfg) {
-                var $label = $('<label>').addClass('tribe-common-form-control-select').text(cfg.label);
-                var $sel = buildSelect(TecSimpleFiltersData[cfg.list] || [], cfg.key, q(cfg.key))
-                    .addClass('tribe-common-form-control__input')
+                var $formControl = $('<div>').addClass('tribe-common-form-control-select tec-simple-filter-control');
+                var $label = $('<label>')
+                    .addClass('tribe-common-form-control-select__label')
+                    .attr('for', 'tec-filter-' + cfg.key)
+                    .text(cfg.label);
+
+                var $sel = buildSelect(TecSimpleFiltersData[cfg.list] || [], cfg.key, q(cfg.key), cfg.placeholder)
+                    .addClass('tribe-common-form-control-select__input tribe-common-form-control__input')
                     .attr('id', 'tec-filter-' + cfg.key);
-                $label.append($sel);
-                $container.append($label);
+
+                $formControl.append($label).append($sel);
+                $inner.append($formControl);
             });
 
             var $clear = $('<button>')
@@ -127,15 +131,19 @@
                 .addClass('tribe-common-c-btn tribe-common-c-btn__clear tec-simple-filters-clear-btn')
                 .text('Clear');
 
-            $container.append($clear);
+            $inner.append($clear);
 
+            $container.append($inner);
+
+            // Add searchable class if many options
             $container.find('select').each(function () {
                 if ($(this).find('option').length > 20) {
                     $(this).addClass('tribe-select--searchable');
                 }
             });
 
-            $topBar.append($container);
+            // Inject into the events bar
+            $eventsBar.append($container);
 
             // Bind change
             $container.off('change').on('change', 'select', function (e) {
