@@ -5,7 +5,7 @@
  * Version: 0.1.0
  * Author: Raphael Suzuki
  * GitHub Plugin URI: https://github.com/raphaelsuzuki/tec-simple-filter
- * Primary Branch: master
+ * Primary Branch: main
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
