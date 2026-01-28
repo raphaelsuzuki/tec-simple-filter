@@ -67,6 +67,52 @@ function tec_simple_filters_get_val( $key, $context = null ) {
     return isset( $_GET[ $key ] ) ? $_GET[ $key ] : '';
 }
 
+/**
+ * Get the list of active filters.
+ */
+function tec_simple_filters_get_active_filters() {
+    $filters = [
+        'category' => [
+            'list'        => 'categories',
+            'key'         => 'tribe_events_cat',
+            'label'       => __( 'Category', 'tec-simple-filters' ),
+            'placeholder' => __( 'All Categories', 'tec-simple-filters' ),
+        ],
+        'tag' => [
+            'list'        => 'tags',
+            'key'         => 'tag',
+            'label'       => __( 'Tag', 'tec-simple-filters' ),
+            'placeholder' => __( 'All Tags', 'tec-simple-filters' ),
+        ],
+        'venue' => [
+            'list'        => 'venues',
+            'key'         => 'tec_venue',
+            'label'       => __( 'Venue', 'tec-simple-filters' ),
+            'placeholder' => __( 'All Venues', 'tec-simple-filters' ),
+        ],
+        'organizer' => [
+            'list'        => 'organizers',
+            'key'         => 'tec_organizer',
+            'label'       => __( 'Organizer', 'tec-simple-filters' ),
+            'placeholder' => __( 'All Organizers', 'tec-simple-filters' ),
+        ],
+        'city' => [
+            'list'        => 'cities',
+            'key'         => 'tec_venue_city',
+            'label'       => __( 'City', 'tec-simple-filters' ),
+            'placeholder' => __( 'All Cities', 'tec-simple-filters' ),
+        ],
+        'state' => [
+            'list'        => 'states',
+            'key'         => 'tec_venue_state',
+            'label'       => __( 'State / Province', 'tec-simple-filters' ),
+            'placeholder' => __( 'All States', 'tec-simple-filters' ),
+        ],
+    ];
+
+    return apply_filters( 'tec_simple_filters_active_filters', $filters );
+}
+
 function tec_simple_filters_enqueue_assets() {
     $dir = plugin_dir_url( __FILE__ );
     wp_enqueue_style( 'tec-simple-filters', $dir . 'assets/css/filters.css', [], '0.1.0' );
@@ -129,6 +175,8 @@ function tec_simple_filters_enqueue_assets() {
 
     $states = isset( $states ) && is_array( $states ) ? array_values( array_filter( array_unique( $states ) ) ) : [];
 
+    $active_filters = tec_simple_filters_get_active_filters();
+
     wp_localize_script( 'tec-simple-filters', 'TecSimpleFiltersData', [
         'venues'     => $venues,
         'organizers' => $organizers,
@@ -136,6 +184,7 @@ function tec_simple_filters_enqueue_assets() {
         'states'     => $states,
         'categories' => $categories,
         'tags'       => $tags,
+        'config'     => array_values( $active_filters ), // Pass configured filters to JS
     ] );
 }
 
@@ -152,98 +201,97 @@ function tec_simple_filters_apply_filters( $args, $context, $view ) {
         $args['tax_query']['relation'] = 'AND';
     }
 
-    $venue_id = intval( tec_simple_filters_get_val( 'tec_venue', $context ) );
-    if ( $venue_id ) {
-        $args['meta_query'][] = [
-            'key'     => '_EventVenueID',
-            'value'   => $venue_id,
-            'compare' => '=',
-        ];
-    }
+    $active_filters = tec_simple_filters_get_active_filters();
+    $enabled_keys = wp_list_pluck( $active_filters, 'key' );
 
-    $organizer_id = intval( tec_simple_filters_get_val( 'tec_organizer', $context ) );
-    if ( $organizer_id ) {
-        $args['meta_query'][] = [
-            'key'     => '_EventOrganizerID',
-            'value'   => $organizer_id,
-            'compare' => '=',
-        ];
-    }
-
-    // Category (tribe_events_cat) filter - taxonomy by slug
-    $cat = sanitize_text_field( tec_simple_filters_get_val( 'tribe_events_cat', $context ) );
-    if ( $cat ) {
-        $args['tax_query'][] = [
-            'taxonomy' => 'tribe_events_cat',
-            'field'    => 'slug',
-            'terms'    => $cat,
-        ];
-    }
-
-    // Tag filter (post_tag) - use query var
-    $tag = sanitize_text_field( tec_simple_filters_get_val( 'tag', $context ) );
-    if ( $tag ) {
-        $args['tag'] = $tag;
-    }
-
-    $city = sanitize_text_field( tec_simple_filters_get_val( 'tec_venue_city', $context ) );
-    if ( $city ) {
-        $city_group = [ 'relation' => 'OR' ];
-
-        // 1) Check event meta directly (fallback)
-        $city_group[] = [ 'key' => '_VenueCity', 'value' => $city, 'compare' => '=' ];
-
-        // 2) Find venues with matching city
-        $venue_ids = get_posts( [
-            'post_type'   => 'tribe_venue',
-            'numberposts' => -1,
-            'fields'      => 'ids',
-            'meta_query'  => [
-                [ 'key' => '_VenueCity', 'value' => $city, 'compare' => '=' ],
-            ],
-        ] );
-
-        if ( ! empty( $venue_ids ) ) {
-            $city_group[] = [
+    // Venue filter
+    if ( in_array( 'tec_venue', $enabled_keys ) ) {
+        $venue_id = intval( tec_simple_filters_get_val( 'tec_venue', $context ) );
+        if ( $venue_id ) {
+            $args['meta_query'][] = [
                 'key'     => '_EventVenueID',
-                'value'   => $venue_ids,
-                'compare' => 'IN',
+                'value'   => $venue_id,
+                'compare' => '=',
             ];
         }
-
-        $args['meta_query'][] = $city_group;
     }
 
-    $state = sanitize_text_field( tec_simple_filters_get_val( 'tec_venue_state', $context ) );
-    if ( $state ) {
-        $state_group = [ 'relation' => 'OR' ];
-
-        // Direct event meta checks (fallback)
-        $state_group[] = [ 'key' => '_VenueState', 'value' => $state, 'compare' => '=' ];
-        $state_group[] = [ 'key' => '_VenueProvince', 'value' => $state, 'compare' => '=' ];
-
-        // Find venues with matching state/province
-        $venue_ids = get_posts( [
-            'post_type'   => 'tribe_venue',
-            'numberposts' => -1,
-            'fields'      => 'ids',
-            'meta_query'  => [
-                'relation' => 'OR',
-                [ 'key' => '_VenueState', 'value' => $state, 'compare' => '=' ],
-                [ 'key' => '_VenueProvince', 'value' => $state, 'compare' => '=' ],
-                [ 'key' => '_VenueStateProvince', 'value' => $state, 'compare' => '=' ],
-            ],
-        ] );
-
-        if ( ! empty( $venue_ids ) ) {
-            $state_group[] = [
-                'key'     => '_EventVenueID',
-                'value'   => $venue_ids,
-                'compare' => 'IN',
+    // Organizer filter
+    if ( in_array( 'tec_organizer', $enabled_keys ) ) {
+        $organizer_id = intval( tec_simple_filters_get_val( 'tec_organizer', $context ) );
+        if ( $organizer_id ) {
+            $args['meta_query'][] = [
+                'key'     => '_EventOrganizerID',
+                'value'   => $organizer_id,
+                'compare' => '=',
             ];
         }
+    }
 
-        $args['meta_query'][] = $state_group;
+    // Category (tribe_events_cat) filter
+    if ( in_array( 'tribe_events_cat', $enabled_keys ) ) {
+        $cat = sanitize_text_field( tec_simple_filters_get_val( 'tribe_events_cat', $context ) );
+        if ( $cat ) {
+            $args['tax_query'][] = [
+                'taxonomy' => 'tribe_events_cat',
+                'field'    => 'slug',
+                'terms'    => $cat,
+            ];
+        }
+    }
+
+    // Tag filter
+    if ( in_array( 'tag', $enabled_keys ) ) {
+        $tag = sanitize_text_field( tec_simple_filters_get_val( 'tag', $context ) );
+        if ( $tag ) {
+            $args['tag'] = $tag;
+        }
+    }
+
+    // City filter
+    if ( in_array( 'tec_venue_city', $enabled_keys ) ) {
+        $city = sanitize_text_field( tec_simple_filters_get_val( 'tec_venue_city', $context ) );
+        if ( $city ) {
+            $city_group = [ 'relation' => 'OR' ];
+            $city_group[] = [ 'key' => '_VenueCity', 'value' => $city, 'compare' => '=' ];
+            $venue_ids = get_posts( [
+                'post_type'   => 'tribe_venue',
+                'numberposts' => -1,
+                'fields'      => 'ids',
+                'meta_query'  => [
+                    [ 'key' => '_VenueCity', 'value' => $city, 'compare' => '=' ],
+                ],
+            ] );
+            if ( ! empty( $venue_ids ) ) {
+                $city_group[] = [ 'key' => '_EventVenueID', 'value' => $venue_ids, 'compare' => 'IN' ];
+            }
+            $args['meta_query'][] = $city_group;
+        }
+    }
+
+    // State filter
+    if ( in_array( 'tec_venue_state', $enabled_keys ) ) {
+        $state = sanitize_text_field( tec_simple_filters_get_val( 'tec_venue_state', $context ) );
+        if ( $state ) {
+            $state_group = [ 'relation' => 'OR' ];
+            $state_group[] = [ 'key' => '_VenueState', 'value' => $state, 'compare' => '=' ];
+            $state_group[] = [ 'key' => '_VenueProvince', 'value' => $state, 'compare' => '=' ];
+            $venue_ids = get_posts( [
+                'post_type'   => 'tribe_venue',
+                'numberposts' => -1,
+                'fields'      => 'ids',
+                'meta_query'  => [
+                    'relation' => 'OR',
+                    [ 'key' => '_VenueState', 'value' => $state, 'compare' => '=' ],
+                    [ 'key' => '_VenueProvince', 'value' => $state, 'compare' => '=' ],
+                    [ 'key' => '_VenueStateProvince', 'value' => $state, 'compare' => '=' ],
+                ],
+            ] );
+            if ( ! empty( $venue_ids ) ) {
+                $state_group[] = [ 'key' => '_EventVenueID', 'value' => $venue_ids, 'compare' => 'IN' ];
+            }
+            $args['meta_query'][] = $state_group;
+        }
     }
 
     return $args;
@@ -251,7 +299,8 @@ function tec_simple_filters_apply_filters( $args, $context, $view ) {
 
 function tec_simple_filters_preserve_query_args_in_view_urls( $url, $canonical, $view ) {
     $params = [];
-    $keys = [ 'tec_venue', 'tec_organizer', 'tec_venue_city', 'tec_venue_state', 'tribe_events_cat', 'tag' ];
+    $active_filters = tec_simple_filters_get_active_filters();
+    $keys = wp_list_pluck( $active_filters, 'key' );
     
     foreach ( $keys as $key ) {
         // Pass the view object itself to the helper so it can extract the view's specific context

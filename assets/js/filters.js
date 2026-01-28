@@ -97,6 +97,14 @@
                 return;
             }
 
+            var filterConfig = TecSimpleFiltersData.config || [];
+            if (!filterConfig.length) {
+                $('.tec-simple-filters-row').remove();
+                return;
+            }
+
+            var filterKeys = filterConfig.map(function (c) { return c.key; });
+
             // Cleanup
             $('.tec-simple-filters-row').remove();
 
@@ -104,14 +112,7 @@
             var $inner = $('<div>').addClass('tec-simple-filters-container');
             var q = getQueryVal;
 
-            [
-                { list: 'categories', key: 'tribe_events_cat', label: 'Category', placeholder: 'All Categories' },
-                { list: 'tags', key: 'tag', label: 'Tag', placeholder: 'All Tags' },
-                { list: 'venues', key: 'tec_venue', label: 'Venue', placeholder: 'All Venues' },
-                { list: 'organizers', key: 'tec_organizer', label: 'Organizer', placeholder: 'All Organizers' },
-                { list: 'cities', key: 'tec_venue_city', label: 'City', placeholder: 'All Cities' },
-                { list: 'states', key: 'tec_venue_state', label: 'State / Province', placeholder: 'All States' }
-            ].forEach(function (cfg) {
+            filterConfig.forEach(function (cfg) {
                 var $formControl = $('<div>').addClass('tribe-common-form-control-select tec-simple-filter-control');
                 var $label = $('<label>')
                     .addClass('tribe-common-form-control-select__label')
@@ -159,7 +160,7 @@
                 params.forEach(function (v, k) {
                     targetUrl.searchParams.set(k, v);
                 });
-                var filterKeys = ['tribe_events_cat', 'tag', 'tec_venue', 'tec_organizer', 'tec_venue_city', 'tec_venue_state'];
+
                 filterKeys.forEach(function (k) {
                     if (!params.has(k)) targetUrl.searchParams.delete(k);
                 });
@@ -173,7 +174,6 @@
                 e.stopPropagation();
 
                 var targetUrl = new URL(window.location.href);
-                var filterKeys = ['tribe_events_cat', 'tag', 'tec_venue', 'tec_organizer', 'tec_venue_city', 'tec_venue_state'];
                 filterKeys.forEach(function (k) {
                     targetUrl.searchParams.delete(k);
                 });
