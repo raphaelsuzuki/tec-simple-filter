@@ -135,8 +135,8 @@ function tec_simple_filters_get_active_filters() {
  */
 function tec_simple_filters_enqueue_assets() {
 	$dir = plugin_dir_url( __FILE__ );
-	wp_enqueue_style( 'tec-simple-filters', $dir . 'assets/css/filters.css', [], '0.1.0' );
-	wp_enqueue_script( 'tec-simple-filters', $dir . 'assets/js/filters.js', [ 'jquery' ], '0.1.0', true );
+	wp_enqueue_style( 'tec-simple-filters', $dir . 'assets/css/filters.css', [], '0.1.1' );
+	wp_enqueue_script( 'tec-simple-filters', $dir . 'assets/js/filters.js', [ 'jquery' ], '0.1.1', true );
 
 	$venues = [];
 	if ( function_exists( 'tribe_get_venues' ) ) {
@@ -224,6 +224,11 @@ function tec_simple_filters_enqueue_assets() {
 		'categories' => $categories,
 		'tags'	   => $tags,
 		'config'	 => array_values( $active_filters ), // Pass configured filters to JS.
+		'i18n'	   => [
+			'toggleLabel'	=> __( 'Filters', 'tec-simple-filters' ),
+			'toggleExpand'	=> __( 'Show filters', 'tec-simple-filters' ),
+			'toggleCollapse' => __( 'Hide filters', 'tec-simple-filters' ),
+		],
 	] );
 }
 
