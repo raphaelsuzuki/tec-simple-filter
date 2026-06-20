@@ -1,6 +1,14 @@
 (function ($) {
 	'use strict';
 
+	var MOBILE_MQ = window.matchMedia('(max-width: 768px)');
+	var instanceCounter = 0;
+
+	function nextInstanceId() {
+		instanceCounter += 1;
+		return 'tec-simple-filters-' + instanceCounter;
+	}
+
 	/**
 	 * Build select element with options.
 	 */
@@ -12,7 +20,6 @@
 			var val = it.id || it;
 			var labelItem = it.name || it;
 			var $o = $('<option>').attr('value', val).text(labelItem);
-			// Loose comparison to handle numeric strings vs numbers
 			if (val && selected && String(val) === String(selected)) {
 				$o.prop('selected', true);
 			}
@@ -29,21 +36,36 @@
 
 		var isNavigating = false;
 		var navTimeout = null;
-
-		// Navigation guard to keep selected state during AJAX transitions
+		var filtersExpanded = false;
 		var lastState = null;
+		var i18n = TecSimpleFiltersData.i18n || {};
 
-		/**
-		 * Get current query value, prioritizing the last state we navigated to
-		 */
 		function getQueryVal(key) {
 			var params = lastState || new URLSearchParams(window.location.search);
 			return params.get(key) || '';
 		}
 
-		/**
-		 * Trigger AJAX or Full-page navigation.
-		 */
+		function countActiveFilters(filterKeys, q) {
+			return filterKeys.filter(function (k) {
+				return q(k);
+			}).length;
+		}
+
+		function updateToggleState($row, $toggle, expanded) {
+			$row.toggleClass('tec-simple-filters-row--open', expanded);
+			$toggle.attr('aria-expanded', expanded ? 'true' : 'false');
+			$toggle.attr('aria-label', expanded
+				? (i18n.toggleCollapse || 'Hide filters')
+				: (i18n.toggleExpand || 'Show filters'));
+		}
+
+		function setAllToggleStates(expanded) {
+			$('.tec-simple-filters-row').each(function () {
+				var $row = $(this);
+				updateToggleState($row, $row.find('.tec-simple-filters-toggle').first(), expanded);
+			});
+		}
+
 		function navigate(newUrl) {
 			var target = new URL(newUrl, window.location.origin);
 			var current = new URL(window.location.href);
@@ -64,7 +86,6 @@
 				navTimeout = null;
 				isNavigating = true;
 
-				// LOCK selective state before request
 				lastState = target.searchParams;
 				renderFilters();
 
@@ -72,15 +93,12 @@
 				var $container = $('[data-js="tribe-events-view"]');
 
 				if (manager && typeof manager.request === 'function' && $container.length) {
-					var data = {
+					manager.request({
 						url: target.href,
 						prev_url: current.href,
 						should_manage_url: true
-					};
+					}, $container);
 
-					manager.request(data, $container);
-
-					// Reset guard after delay
 					setTimeout(function () { isNavigating = false; }, 1000);
 				} else {
 					window.location.href = target.href;
@@ -88,12 +106,9 @@
 			}, 50);
 		}
 
-		/**
-		 * Build the filter UI.
-		 */
 		function renderFilters() {
-			var $eventsBar = $('.tribe-events-c-events-bar');
-			if (!$eventsBar.length) {
+			var $eventsBars = $('.tribe-events-c-events-bar');
+			if (!$eventsBars.length) {
 				return;
 			}
 
@@ -104,92 +119,123 @@
 			}
 
 			var filterKeys = filterConfig.map(function (c) { return c.key; });
+			var q = getQueryVal;
+			var activeCount = countActiveFilters(filterKeys, q);
 
-			// Cleanup
 			$('.tec-simple-filters-row').remove();
 
-			var $container = $('<div>').addClass('tec-simple-filters-row');
-			var $inner = $('<div>').addClass('tec-simple-filters-container');
-			var q = getQueryVal;
+			$eventsBars.each(function () {
+				var $eventsBar = $(this);
+				var instanceId = nextInstanceId();
+				var panelId = instanceId + '-panel';
 
-			filterConfig.forEach(function (cfg) {
-				var $formControl = $('<div>').addClass('tribe-common-form-control-select tec-simple-filter-control');
-				var $label = $('<label>')
-					.addClass('tribe-common-form-control-select__label')
-					.attr('for', 'tec-filter-' + cfg.key)
-					.text(cfg.label);
+				var $container = $('<div>').addClass('tec-simple-filters-row');
+				var $toggle = $('<button>')
+					.attr('type', 'button')
+					.addClass('tec-simple-filters-toggle')
+					.attr('aria-controls', panelId)
+					.attr('aria-expanded', 'false');
 
-				var $sel = buildSelect(TecSimpleFiltersData[cfg.list] || [], cfg.key, q(cfg.key), cfg.placeholder)
-					.addClass('tribe-common-form-control-select__input tribe-common-form-control__input')
-					.attr('id', 'tec-filter-' + cfg.key);
+				var $toggleLabel = $('<span>').addClass('tec-simple-filters-toggle__label')
+					.text(i18n.toggleLabel || 'Filters');
 
-				$formControl.append($label).append($sel);
-				$inner.append($formControl);
-			});
-
-			var $clear = $('<button>')
-				.attr('type', 'button')
-				.addClass('tribe-common-c-btn tribe-common-c-btn__clear tec-simple-filters-clear-btn')
-				.text('Clear');
-
-			$inner.append($clear);
-
-			$container.append($inner);
-
-			// Add searchable class if many options
-			$container.find('select').each(function () {
-				if ($(this).find('option').length > 20) {
-					$(this).addClass('tribe-select--searchable');
+				if (activeCount) {
+					$toggleLabel.append(
+						$('<span>').addClass('tec-simple-filters-toggle__count').text(activeCount)
+					);
 				}
-			});
 
-			// Inject into the events bar
-			$eventsBar.append($container);
+				$toggle.append($toggleLabel).append($('<span>').addClass('tec-simple-filters-toggle__icon').attr('aria-hidden', 'true'));
 
-			// Bind change
-			$container.off('change').on('change', 'select', function (e) {
-				e.preventDefault();
-				var params = new URLSearchParams(window.location.search);
-				$container.find('select').each(function () {
-					var n = $(this).data('name');
-					var v = $(this).val();
-					if (v) params.set(n, v); else params.delete(n);
+				var $inner = $('<div>')
+					.addClass('tec-simple-filters-container')
+					.attr('id', panelId);
+
+				filterConfig.forEach(function (cfg) {
+					var fieldId = instanceId + '-filter-' + cfg.key;
+					var $formControl = $('<div>').addClass('tribe-common-form-control-select tec-simple-filter-control');
+					var $label = $('<label>')
+						.addClass('tribe-common-form-control-select__label')
+						.attr('for', fieldId)
+						.text(cfg.label);
+
+					var $sel = buildSelect(TecSimpleFiltersData[cfg.list] || [], cfg.key, q(cfg.key), cfg.placeholder)
+						.addClass('tribe-common-form-control-select__input tribe-common-form-control__input')
+						.attr('id', fieldId);
+
+					$formControl.append($label).append($sel);
+					$inner.append($formControl);
 				});
 
-				var targetUrl = new URL(window.location.href);
-				params.forEach(function (v, k) {
-					targetUrl.searchParams.set(k, v);
+				var $clear = $('<button>')
+					.attr('type', 'button')
+					.addClass('tribe-common-c-btn tribe-common-c-btn__clear tec-simple-filters-clear-btn')
+					.text('Clear');
+
+				$inner.append($clear);
+				$container.append($toggle).append($inner);
+
+				if (!MOBILE_MQ.matches) {
+					$container.find('select').each(function () {
+						if ($(this).find('option').length > 20) {
+							$(this).addClass('tribe-select--searchable');
+						}
+					});
+				}
+
+				$eventsBar.append($container);
+				updateToggleState($container, $toggle, filtersExpanded);
+
+				$toggle.on('click', function (e) {
+					e.preventDefault();
+					filtersExpanded = !filtersExpanded;
+					setAllToggleStates(filtersExpanded);
 				});
 
-				filterKeys.forEach(function (k) {
-					if (!params.has(k)) targetUrl.searchParams.delete(k);
+				$container.on('change', 'select', function (e) {
+					e.preventDefault();
+					var params = new URLSearchParams(window.location.search);
+					$container.find('select').each(function () {
+						var n = $(this).data('name');
+						var v = $(this).val();
+						if (v) {
+							params.set(n, v);
+						} else {
+							params.delete(n);
+						}
+					});
+
+					var targetUrl = new URL(window.location.href);
+					params.forEach(function (v, k) {
+						targetUrl.searchParams.set(k, v);
+					});
+
+					filterKeys.forEach(function (k) {
+						if (!params.has(k)) {
+							targetUrl.searchParams.delete(k);
+						}
+					});
+
+					navigate(targetUrl.href);
 				});
 
-				navigate(targetUrl.href);
-			});
+				$clear.on('click', function (e) {
+					e.preventDefault();
+					e.stopPropagation();
 
-			// Bind Clear
-			$clear.off('click').on('click', function (e) {
-				e.preventDefault();
-				e.stopPropagation();
+					var targetUrl = new URL(window.location.href);
+					filterKeys.forEach(function (k) {
+						targetUrl.searchParams.delete(k);
+					});
 
-				var targetUrl = new URL(window.location.href);
-				filterKeys.forEach(function (k) {
-					targetUrl.searchParams.delete(k);
+					navigate(targetUrl.href);
 				});
-
-				navigate(targetUrl.href);
 			});
 		}
 
-		// Initial render
 		renderFilters();
 
-		/**
-		 * Re-render when TEC view updates.
-		 */
 		$(document).on('afterAjaxSuccess.tribeEvents', function () {
-			// Unset the locked state so we refresh from the actual updated URL
 			lastState = null;
 			setTimeout(renderFilters, 25);
 		});
