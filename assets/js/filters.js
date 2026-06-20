@@ -2,6 +2,12 @@
 	'use strict';
 
 	var MOBILE_MQ = window.matchMedia('(max-width: 768px)');
+	var instanceCounter = 0;
+
+	function nextInstanceId() {
+		instanceCounter += 1;
+		return 'tec-simple-filters-' + instanceCounter;
+	}
 
 	/**
 	 * Build select element with options.
@@ -53,6 +59,13 @@
 				: (i18n.toggleExpand || 'Show filters'));
 		}
 
+		function setAllToggleStates(expanded) {
+			$('.tec-simple-filters-row').each(function () {
+				var $row = $(this);
+				updateToggleState($row, $row.find('.tec-simple-filters-toggle').first(), expanded);
+			});
+		}
+
 		function navigate(newUrl) {
 			var target = new URL(newUrl, window.location.origin);
 			var current = new URL(window.location.href);
@@ -94,8 +107,8 @@
 		}
 
 		function renderFilters() {
-			var $eventsBar = $('.tribe-events-c-events-bar');
-			if (!$eventsBar.length) {
+			var $eventsBars = $('.tribe-events-c-events-bar');
+			if (!$eventsBars.length) {
 				return;
 			}
 
@@ -111,105 +124,112 @@
 
 			$('.tec-simple-filters-row').remove();
 
-			var $container = $('<div>').addClass('tec-simple-filters-row');
-			var $toggle = $('<button>')
-				.attr('type', 'button')
-				.addClass('tec-simple-filters-toggle')
-				.attr('aria-controls', 'tec-simple-filters-panel')
-				.attr('aria-expanded', 'false');
+			$eventsBars.each(function () {
+				var $eventsBar = $(this);
+				var instanceId = nextInstanceId();
+				var panelId = instanceId + '-panel';
 
-			var $toggleLabel = $('<span>').addClass('tec-simple-filters-toggle__label')
-				.text(i18n.toggleLabel || 'Filters');
+				var $container = $('<div>').addClass('tec-simple-filters-row');
+				var $toggle = $('<button>')
+					.attr('type', 'button')
+					.addClass('tec-simple-filters-toggle')
+					.attr('aria-controls', panelId)
+					.attr('aria-expanded', 'false');
 
-			if (activeCount) {
-				$toggleLabel.append(
-					$('<span>').addClass('tec-simple-filters-toggle__count').text(activeCount)
-				);
-			}
+				var $toggleLabel = $('<span>').addClass('tec-simple-filters-toggle__label')
+					.text(i18n.toggleLabel || 'Filters');
 
-			$toggle.append($toggleLabel).append($('<span>').addClass('tec-simple-filters-toggle__icon').attr('aria-hidden', 'true'));
+				if (activeCount) {
+					$toggleLabel.append(
+						$('<span>').addClass('tec-simple-filters-toggle__count').text(activeCount)
+					);
+				}
 
-			var $inner = $('<div>')
-				.addClass('tec-simple-filters-container')
-				.attr('id', 'tec-simple-filters-panel');
+				$toggle.append($toggleLabel).append($('<span>').addClass('tec-simple-filters-toggle__icon').attr('aria-hidden', 'true'));
 
-			filterConfig.forEach(function (cfg) {
-				var $formControl = $('<div>').addClass('tribe-common-form-control-select tec-simple-filter-control');
-				var $label = $('<label>')
-					.addClass('tribe-common-form-control-select__label')
-					.attr('for', 'tec-filter-' + cfg.key)
-					.text(cfg.label);
+				var $inner = $('<div>')
+					.addClass('tec-simple-filters-container')
+					.attr('id', panelId);
 
-				var $sel = buildSelect(TecSimpleFiltersData[cfg.list] || [], cfg.key, q(cfg.key), cfg.placeholder)
-					.addClass('tribe-common-form-control-select__input tribe-common-form-control__input')
-					.attr('id', 'tec-filter-' + cfg.key);
+				filterConfig.forEach(function (cfg) {
+					var fieldId = instanceId + '-filter-' + cfg.key;
+					var $formControl = $('<div>').addClass('tribe-common-form-control-select tec-simple-filter-control');
+					var $label = $('<label>')
+						.addClass('tribe-common-form-control-select__label')
+						.attr('for', fieldId)
+						.text(cfg.label);
 
-				$formControl.append($label).append($sel);
-				$inner.append($formControl);
-			});
+					var $sel = buildSelect(TecSimpleFiltersData[cfg.list] || [], cfg.key, q(cfg.key), cfg.placeholder)
+						.addClass('tribe-common-form-control-select__input tribe-common-form-control__input')
+						.attr('id', fieldId);
 
-			var $clear = $('<button>')
-				.attr('type', 'button')
-				.addClass('tribe-common-c-btn tribe-common-c-btn__clear tec-simple-filters-clear-btn')
-				.text('Clear');
-
-			$inner.append($clear);
-			$container.append($toggle).append($inner);
-
-			if (!MOBILE_MQ.matches) {
-				$container.find('select').each(function () {
-					if ($(this).find('option').length > 20) {
-						$(this).addClass('tribe-select--searchable');
-					}
+					$formControl.append($label).append($sel);
+					$inner.append($formControl);
 				});
-			}
 
-			$eventsBar.append($container);
-			updateToggleState($container, $toggle, filtersExpanded);
+				var $clear = $('<button>')
+					.attr('type', 'button')
+					.addClass('tribe-common-c-btn tribe-common-c-btn__clear tec-simple-filters-clear-btn')
+					.text('Clear');
 
-			$toggle.off('click').on('click', function (e) {
-				e.preventDefault();
-				filtersExpanded = !filtersExpanded;
+				$inner.append($clear);
+				$container.append($toggle).append($inner);
+
+				if (!MOBILE_MQ.matches) {
+					$container.find('select').each(function () {
+						if ($(this).find('option').length > 20) {
+							$(this).addClass('tribe-select--searchable');
+						}
+					});
+				}
+
+				$eventsBar.append($container);
 				updateToggleState($container, $toggle, filtersExpanded);
-			});
 
-			$container.off('change').on('change', 'select', function (e) {
-				e.preventDefault();
-				var params = new URLSearchParams(window.location.search);
-				$container.find('select').each(function () {
-					var n = $(this).data('name');
-					var v = $(this).val();
-					if (v) {
-						params.set(n, v);
-					} else {
-						params.delete(n);
-					}
+				$toggle.on('click', function (e) {
+					e.preventDefault();
+					filtersExpanded = !filtersExpanded;
+					setAllToggleStates(filtersExpanded);
 				});
 
-				var targetUrl = new URL(window.location.href);
-				params.forEach(function (v, k) {
-					targetUrl.searchParams.set(k, v);
+				$container.on('change', 'select', function (e) {
+					e.preventDefault();
+					var params = new URLSearchParams(window.location.search);
+					$container.find('select').each(function () {
+						var n = $(this).data('name');
+						var v = $(this).val();
+						if (v) {
+							params.set(n, v);
+						} else {
+							params.delete(n);
+						}
+					});
+
+					var targetUrl = new URL(window.location.href);
+					params.forEach(function (v, k) {
+						targetUrl.searchParams.set(k, v);
+					});
+
+					filterKeys.forEach(function (k) {
+						if (!params.has(k)) {
+							targetUrl.searchParams.delete(k);
+						}
+					});
+
+					navigate(targetUrl.href);
 				});
 
-				filterKeys.forEach(function (k) {
-					if (!params.has(k)) {
+				$clear.on('click', function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+
+					var targetUrl = new URL(window.location.href);
+					filterKeys.forEach(function (k) {
 						targetUrl.searchParams.delete(k);
-					}
+					});
+
+					navigate(targetUrl.href);
 				});
-
-				navigate(targetUrl.href);
-			});
-
-			$clear.off('click').on('click', function (e) {
-				e.preventDefault();
-				e.stopPropagation();
-
-				var targetUrl = new URL(window.location.href);
-				filterKeys.forEach(function (k) {
-					targetUrl.searchParams.delete(k);
-				});
-
-				navigate(targetUrl.href);
 			});
 		}
 
