@@ -45,12 +45,6 @@
 			return params.get(key) || '';
 		}
 
-		function countActiveFilters(filterKeys, q) {
-			return filterKeys.filter(function (k) {
-				return q(k);
-			}).length;
-		}
-
 		function updateToggleState($row, $toggle, expanded) {
 			$row.toggleClass('tec-simple-filters-row--open', expanded);
 			$toggle.attr('aria-expanded', expanded ? 'true' : 'false');
@@ -120,7 +114,6 @@
 
 			var filterKeys = filterConfig.map(function (c) { return c.key; });
 			var q = getQueryVal;
-			var activeCount = countActiveFilters(filterKeys, q);
 
 			$('.tec-simple-filters-row').remove();
 
@@ -132,20 +125,28 @@
 				var $container = $('<div>').addClass('tec-simple-filters-row');
 				var $toggle = $('<button>')
 					.attr('type', 'button')
-					.addClass('tec-simple-filters-toggle')
+					.addClass('tribe-events-c-view-selector__button tribe-common-c-btn__clear tec-simple-filters-toggle')
 					.attr('aria-controls', panelId)
 					.attr('aria-expanded', 'false');
 
-				var $toggleLabel = $('<span>').addClass('tec-simple-filters-toggle__label')
+				var $toggleLabel = $('<span>').addClass('tec-simple-filters-toggle__label tribe-common-a11y-visual-hide')
 					.text(i18n.toggleLabel || 'Filters');
 
-				if (activeCount) {
-					$toggleLabel.append(
-						$('<span>').addClass('tec-simple-filters-toggle__count').text(activeCount)
-					);
-				}
+				var $toggleIcon = $('<span>').addClass('tec-simple-filters-toggle__icon').attr('aria-hidden', 'true').append(
+					$('<svg>')
+						.addClass('tribe-common-c-svgicon tribe-common-c-svgicon--filter tec-simple-filters-toggle__icon-svg')
+						.attr('viewBox', '0 0 16 16')
+						.attr('xmlns', 'http://www.w3.org/2000/svg')
+						.attr('focusable', 'false')
+						.append(
+							$('<path>')
+								.attr('fill-rule', 'evenodd')
+								.attr('clip-rule', 'evenodd')
+								.attr('d', 'M0 2.25C0 1.56.56 1 1.25 1h13.5C15.44 1 16 1.56 16 2.25S15.44 3.5 14.75 3.5H1.25C.56 3.5 0 2.94 0 2.25zM2.5 8c0-.69.56-1.25 1.25-1.25h8.5c.69 0 1.25.56 1.25 1.25s-.56 1.25-1.25 1.25h-8.5C3.06 9.25 2.5 8.69 2.5 8zm2.5 5.75c0-.69.56-1.25 1.25-1.25h3.5c.69 0 1.25.56 1.25 1.25S10.44 15 9.75 15h-3.5C5.56 15 5 14.44 5 13.75z')
+						)
+				);
 
-				$toggle.append($toggleLabel).append($('<span>').addClass('tec-simple-filters-toggle__icon').attr('aria-hidden', 'true'));
+				$toggle.append($toggleLabel).append($toggleIcon);
 
 				var $inner = $('<div>')
 					.addClass('tec-simple-filters-container')
